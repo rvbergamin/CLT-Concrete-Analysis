@@ -45,8 +45,18 @@ The program generates detailed results, including:
  - Verification of ULS and SLS requirements.
  - Visualization of key structural behaviors.
  - Recommendations for connector spacing and layout.
+
+4. Disclaimer
+The author of CLT-Concrete Analysis disclaims any responsibility for the 
+inappropriate or unintended use of this program. While every effort has 
+been made to ensure the accuracy and reliability of the tool, the author 
+is not liable for any damages or consequences arising from the use of 
+CLT-Concrete Analysis. Users are advised to use the program judiciously 
+and seek professional advice when interpreting the results for critical 
+structural decisions.
+
  
-4. Contributing
+5. Contributing
 If you would like to contribute to the development of CLT-Concrete
 Analysis, please follow these steps:
  - Fork the repository.
@@ -58,13 +68,13 @@ Analysis, please follow these steps:
  - License
 This project is licensed under the MIT License.
 
-5. Acknowledgments
+6. Acknowledgments
 The present program was developed during the doctoral research conducted
  at the School of Civil Engineering, Architecture and Urbanism (FECFAU) 
  of the State University of Campinas (UNICAMP), which, in turn, received 
  support from the Coordination for the Improvement of Higher Education 
  Personnel – Brazil (CAPES).
 
-6. Contact
+7. Contact
 For questions or feedback, feel free to reach out at
  ramonvilela@outlook.com.
