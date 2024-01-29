@@ -4,19 +4,19 @@
 %
 % Version 1.00
 % 
-% Updated January 27, 2024
+% Updated January 28, 2024
 %
-% All rigth reserved
+% All right reserved
 
 clc; clearvars; close all; tic
 
 %% INPUT DATA
 b   = 1.00;   % width, m
-L   = 3.84;   % lenght, m
+L   = 7.00;   % lenght, m
 g   = 9.81;     % gravity, m/s^2
 bt  = 0.14;   % lamella width, m  
 
-% Tickness (m)
+% Thickness (m)
 hc  = 0.10;     % concrete layer
 t   = 0.00;     % spacing between materials
 h1  = 0.04;     % CLT layer 1
@@ -26,7 +26,7 @@ h23 = 0.04;     % CLT layer 23
 h3  = 0.04;     % CLT layer 3
 
 % Concrete properties
-fck = 40e6;       % characteristic strength (Pa)
+fck = 20e6;       % characteristic strength (Pa)
 alphaE = 1.2;     % factor according to NBR 6118:2023 (-)  
 
 % Longitudinal elastic modulus of wood (Pa)
@@ -51,33 +51,37 @@ fvrk    = 1.6e6;    % rolling shear
 rhoc    = 2400;     % concrete
 rhow    = 550;      % wood
 
-% Coefficient of creep and redution factor
-phic    = 3;       % concrete
-phiw    = 0.8;     % wood
-psi2    = 0.4;     % redution factor according to NBR 8681:2004
+% Coefficient of creep and reduction factor
+phic    = 3.4;     % concrete
+phiw    = 0.6;     % wood
+psi2    = 0.4;     % reduction factor according to NBR 8681:2004
 
 % Connectors
 smin    = 1.00;     % minimum spacing (m)
 smax    = 1.00;     % maximum spacing (m)
-nx      = 3;        % number of connectors in x-direction of mid plate
-ny      = 5;        % nunber of connectors in y-direction in width b
+nx      = 3;        % number of connectors in the x-direction of mid-plate
+ny      = 5;        % number of connectors in y-direction in width b
 
 % Loads (N/m^2)
 gk      = 1e3;      % permanent
 qk      = 3e3;      % live
 
-% Variables to calculate the stiffness of connection
-m = nx;                          % número de conectores ao longo de x
-n = ny;                          % número de conectores ao longo de y
+% Variables to calculate the stiffness of the connection
+m = nx;                          % number of connectors along the x-direction
+n = ny;                          % number of connectors along the y-direction
 % slip moduli, N/m
-K = [110 80 110 80 110
+K = [110 80 110 80 110 
      110 80 110 80 110
-     110 80 110 80 110]*0.7*10^6;
-% strenght of connector, N
+     110 80 110 80 110]*10^6;
+% strength of connector, N
 FRs = [224 215 224 215 224
        224 215 224 215 224
        224 215 224 215 224]*0.7*10^3; 
 [kser,s,x,y,Ki] = kstiffness(m, n, K, smin, smax, b, L);
+
+% Reinforcement
+d = 0.005;  % diameter of bar, m
+sr = 0.10;  % spacing of reinforcement bar
 
 %% CALCULATIONS
 fid = fopen('Results.txt', 'w');    % create a results file
@@ -93,7 +97,7 @@ g1kc   = b*hc*rhoc*g;               % dead load of concrete
 g2k   = gk*b;                       % permanent
 q1k   = qk*b;                       % live
 qSd   = 1.25*g1kclt + 1.30*g1kc + 1.35*g2k + 1.5*q1k;
-qSk   = g1kclt+g1kc+g2k+0.4*q1k;
+qSk   = g1kclt+g1kc+g2k+q1k;
 
 % Design bending moment (N.m)
 MSd = qSd*L^2/8;  
@@ -114,10 +118,10 @@ MakeTitle(fid,'GENERAL DATA',70)
 fprintf(fid,'- DIMENSIONS\n');
 fprintf(fid,'Span (L): \t\t\t\t\t\t%4.0f mm\n',L*1000);
 fprintf(fid,'Width (b): \t\t\t\t\t\t%4.0f mm\n',b*1000);
-fprintf(fid,'Concrete tickness (hc): \t\t%4.0f mm\n',hc*1000);
+fprintf(fid,'Concrete thickness (hc): \t\t%4.0f mm\n',hc*1000);
 fprintf(fid,'Spacing Concrete/CLT (t): \t\t%4.0f mm\n',t*1000);
-fprintf(fid,'CLT tickness (hCLT): \t\t\t%4.0f mm\n',hclt*1000);
-fprintf(fid,'Total tickness (h): \t\t\t%4.0f mm\n',h*1000);
+fprintf(fid,'CLT thickness (hCLT): \t\t\t%4.0f mm\n',hclt*1000);
+fprintf(fid,'Total thickness (h): \t\t\t%4.0f mm\n',h*1000);
 
 fprintf(fid,'\n- LOADS\n');
 fprintf(fid,'Dead load CLT (g1kCLT):\t\t\t%2.2f kN/m\n',g1kclt/1000);
@@ -149,10 +153,10 @@ else
 end
 fprintf(fid,'Effective spacing (sef): \t\t%2.0f mm\n',sef*1000);
 
-%% ULTIATE LIMIT STATE (ULS)
-% Conector
-FRds1 = FRs./1.4;            % Design strengh of conector, N
-k = 2/3*kser;               % distributed stiffnes of connector, N/m^2
+%% ULTIMATE LIMIT STATE (ULS)
+% Connector
+FRds1 = FRs./1.4;           % Design strength of connector, N
+k = 2/3*kser;               % distributed stiffness of connector, N/m^2
 
 % Concrete
 if fck <= 50e6                      % mean tension strength (Pa)
@@ -161,19 +165,22 @@ else
     fctm = 2.12*log(1 + 0.11*fck*10^-6)*10^6;
 end
 fctkinf = 0.7*fctm;         % inferior characteristic strength (Pa)
-fctd = fctkinf/1.4;         % design tension strenght (Pa)
-fcd = fck/1.4;              % desing compression strength (Pa)
+fctd = fctkinf/1.4;         % design tension strength (Pa)
+fcd = fck/1.4;              % design compression strength (Pa)
 Eci = alphaE*5600*sqrt(fck*10^-6)*10^6; 
                             % initial Young's modulus (Pa)
 alphai = 0.8 + 0.2*fck/80e6;  
                             % calculation factor
 Ecs = alphai*Eci;           % secant Young's modulus (Pa)
-rho1 = 0;                   % reinforcement rate 
+nbar = b/sr;                % number of bars
+As1 = nbar*pi*d^2/(4);      % area of reinforcement, m^2
 tauRd = 0.25*fctd;          % design shear strength (Pa)
 sigmacp = 0;                % normal stress (Pa)
-VRdc1 = (tauRd*(1.2+40*rho1)+0.15*sigmacp)*b*hc;
-                            % shear force strength (N)
+
 MakeTitle(fid,'MECHANICAL PROPERTIES',70)
+fprintf(fid,'- Compression strength of concrete:\n');
+fprintf(fid,'Characteristic (fck): \t\t\t%2.2f MPa\n',fck/10^6);
+fprintf(fid,'Design (fcd): \t\t\t\t\t%2.2f MPa\n',fcd/10^6);
 fprintf(fid,'- Tensile strength of concrete:\n');
 fprintf(fid,'Medium (fctm): \t\t\t\t\t%2.2f MPa\n',fctm/10^6);
 fprintf(fid,'Inferior (fctk,inf): \t\t\t%2.2f MPa\n',fctkinf/10^6);
@@ -187,13 +194,14 @@ fprintf(fid,'Secant (Ecs): \t\t\t\t\t%2.2f GPa\n',Ecs/10^9);
 % Madeira
 kmod = 0.7*1*0.95;          % modification factor
 ksys  = (nlam + 34)/35;     % modification system factor
-ft0d = ksys*kmod*ft0k/1.4;  % design parallel tension strengh (Pa)
+ft0d = ksys*kmod*ft0k/1.4;  % design parallel tension strength (Pa)
 fbd = ksys*kmod*fbk/1.4;    % design bending strength (Pa)
 fvrd = kmod*fvrk/1.8;       % rolling shear strength (Pa)
 
 % Calcs of (EI)ef
-[EIef,hcef,a,gamma,EA,EI] = EIeffective(E,Ecs,G12,G23,fctd,k,hc,t,h1,...
+[EIef,hcef,a,gamma,EA,EI,it] = EIeffective(E,Ecs,G12,G23,fctd,k,hc,t,h1,...
     h12,h2,h23,h3,b,L,MSd);
+fprintf(fid,'Iterations: \t\t\t\t\t%.0f\n',it);
 
 % Discretization along the thickness
 z(1) = 0;
@@ -257,7 +265,7 @@ box on
 set(gca, 'FontName', 'Helvetica', 'FontSize', 12)
 ylim([0 h*10^3])
 xlabel('Normal stress (MPa)')
-ylabel('CLT-Concrete tickness (mm)')
+ylabel('CLT-Concrete thickness (mm)')
 legend('Stress', 'NA CLT', 'NA Concrete','EdgeColor','none')
 title('NORMAL STRESS AT MIDSPAN - ULS')
 saveas(gcf,'StressResults.png')
@@ -273,7 +281,7 @@ for i=1:length(xi)
     end
 end
 
-% Bendin moment resistence of the Concrete
+% Bendin moment resistance of the Concrete
 MRdc = fcd*EIef/(Ecs*(0.5*hc+gamma(1)*a(1)));   
 etabc = M./MRdc;
 etabcmax = max(etabc(:));
@@ -294,7 +302,7 @@ etab = MSd/MRd;                      % design factor
 etabc = MSd/MRdc;                    % design factor - concrete
 etabclt = MSd/MRdclt;                % design factor - CLT
 
-fprintf(fid,'Concrete tickness (hcef): \t\t%.2f mm\n',hcef*1000);
+fprintf(fid,'Concrete thickness (hcef): \t\t%.2f mm\n',hcef*1000);
 fprintf(fid,'Eff. bending stiffness (EI)ef:');
 fprintf(fid,'\t%2.3fe6 N.m^2\n',EIef*10^-6);
 fprintf(fid,'Coef. of Composition (gammac)\t%.3f\n',gamma(1));
@@ -306,9 +314,12 @@ fprintf(fid,'Design factor (etab): \t\t\t%.2f %%\n',etab*100);
 
 %% RESISTANCE SHEAR EFFORT
 Fs = zeros(m,n);
+Fsi = zeros(m,1);
 for i=1:m
     for j=1:n
-        Fs(i,j) = K(i,j)/Ki(i)*gamma(1)*EA(1)*a(1)*s(1)*qSd*x(i)/EIef;
+        Fsi(i) = gamma(1)*EA(1)*a(1)*s(1)*qSd*x(i)/EIef;
+        Fs(i,j) = K(i,j)/Ki(i)*Fsi(i);
+        %Fs(i,j) = K(i,j)/Ki(i)*gamma(1)*EA(1)*a(1)*s(1)*qSd*x(i)/EIef;
     end
 end
 etavs = Fs./FRds1;
@@ -320,7 +331,7 @@ note{3} = tit;
 % Maximum shear
 VRds = VSd/etavsmax;                 % in function of the connector
 
-% Design factor to shear in CLT
+% Design factor of shear in the CLT
 for i=1:length(xi)
     for j=1:length(yi)
         V(i,j) = qSd*xi(i);
@@ -335,6 +346,8 @@ PlotDesignRatio(etavclt, b, L, xi, yi, tit);
 note{4} = tit;
 
 % Design factor to shear in Concrete
+rho1 = As1/(b*hcef);                   % reinforcement rate 
+VRdc1 = (tauRd*(1.2+40*rho1)+0.15*sigmacp)*b*hcef;
 VRdc = EIef/(EI(1)+0.5*gamma(1)*EA(1)*a(1)*(2*hc-hcef+t))*VRdc1;
 etavc = V./VRdc;
 etavcmax = max(etavc(:));
@@ -342,7 +355,7 @@ tit = sprintf('\\eta_{v,c} = \t%.2f', etavcmax);
 PlotDesignRatio(etavc, b, L, xi, yi, tit);
 note{5} = tit;
                                 
-VRd = min([VRds,VRdclt,VRdc]);       % shear resistence of concrete
+VRd = min([VRds,VRdclt,VRdc]);       % shear resistance of concrete
 
 % Design factor
 etav = VSd/VRd;                      % general
@@ -360,7 +373,7 @@ fprintf(fid,'Design factor (etav): \t\t\t%.2f %%\n',etav*100);
 %% SERVICE LIMIT STATE - INSTANTANEOUS DISPLACEMENT
 % Calcs of (EI)ef
 [EIef,hcef,a,gamma,EA,EI,it] = ...
-    EIeffective(E,Ecs,G12,G23,fctm,kser,...
+    EIeffective(E,Ecs,G12,G23,fctd,kser,...
     hc,t,h1,h12,h2,h23,h3,b,L,MSk);
 
 % Loads
@@ -372,13 +385,13 @@ p = [g1kclt
 % Displacements
 winst = sum(5.*p.*L^4./(384*EIef)); % instantaneous displacement (m)
 winstlim = L/500;                  	% limit of instantaneous  
-                                  	% displamcement (m)
+                                  	% displacement (m)
 etawinst = winst/winstlim;        	% design factor
 
 % Print numerical results
 fprintf(fid,'\n:::::::::::::SERVICE LIMIT STATE::::::::::::::\n');
 fprintf(fid,'Number of iterations: \t\t\t%.0f\n',it);
-fprintf(fid,'Concrete tickness (hcef): \t\t%.2f mm\n',hcef*1000);
+fprintf(fid,'Concrete thickness (hcef): \t\t%.2f mm\n',hcef*1000);
 fprintf(fid,'Eff. bending stiffness (EI)ef:');
 fprintf(fid,'\t%2.3fe6 N.m^2\n',EIef*10^-6);
 fprintf(fid,'Coef. of Composition (gammac):\t%.3f\n',gamma(1));
@@ -402,7 +415,7 @@ PlotDesignRatio(etawinst, b, L, xi, yi, tit);
 note{6} = tit;
 
 %% Service Limit State - Vibration
-ml = rhow*b*hclt+rhoc*b*hc;         % linear mass (kg/m)
+ml = rhow*b*hclt+rhoc*b*hc+g2k/g;   % linear mass (kg/m)
 f1 = pi/(2*L^2)*sqrt(EIef/ml);      % natural frequency (Hz)
 w1kN = 1000*L^3/(48*EIef);          % displacement duo to 1 kN load
 w1kNlim = f1^1.43/39000;            % limit displacement
@@ -424,7 +437,7 @@ for i=1:length(xi)
 end
 etaw1kN = abs(w)./w1kNlim;
 etaw1kNmax = max(etaw1kN(:));
-tit = sprintf('\\eta_{w,1kN} = \t%.2f', etaw1kNmax);
+tit = sprintf('\\eta_{vib} = \t%.2f', etaw1kNmax);
 PlotDesignRatio(etaw1kN, b, L, xi, yi, tit);
 note{7} = tit;
 
@@ -432,7 +445,7 @@ note{7} = tit;
 % Calcs of (EI)ef
 k = kser./(2.*(1+phiw));            % creep connector stiffness
 Ec = Ecs/(1+phic);                  % creep Young's modulus of concrete
-E = E./(1+phiw);                    % creep elastic modulus in bendind 
+E = E./(1+phiw);                    % creep elastic modulus in bending 
                                     % of wood layers
 G12 = G12./(1+phiw);                % creep transversal elastic modulus                                   
                                     % of 12 wood layer   
@@ -449,7 +462,7 @@ etawfin = wfin/wfinlim;             % design factor
 
 fprintf(fid,'\n- FINAL DISPLACEMENT\n');
 fprintf(fid,'Number of iterations: \t\t\t%.0f\n',it);
-fprintf(fid,'Concrete tickness (hcef): \t\t%.2f mm\n',hcef*1000);
+fprintf(fid,'Concrete thickness (hcef): \t\t%.2f mm\n',hcef*1000);
 fprintf(fid,'Eff. bending stiffness (EI)ef:');
 fprintf(fid,'\t%2.3fe6 N.m^2\n',EIef*10^-6);
 fprintf(fid,'Coef. of Composition (gammac):\t%.3f\n',gamma(1));
@@ -526,7 +539,7 @@ end
 fprintf(fid,'---------------------------------');
 fprintf(fid,'-------------------------------\n');
 
-% SLS-Instantanous displacement 
+% SLS-Instantaneous displacement 
 fprintf(fid,'SLS - Inst. Displacement | %.2f %%\t | ',max(etawinst(:))*100);
 fprintf(fid,'--- \t\t | ');
 if max(etawinst(:)) <= 1
@@ -548,7 +561,7 @@ end
 fprintf(fid,'---------------------------------');
 fprintf(fid,'-------------------------------\n');
 
-% SLS-Excessive vibration
+% SLS-Vibration
 fprintf(fid,'SLS - Vibration \t\t | %.2f %%\t | ',etaf*100);
 fprintf(fid,'--- \t\t | ');
 if etaf <= 1
@@ -568,15 +581,15 @@ etamax = [etabcmax, etabcltmax, etavcmax, etavcltmax, etavsmax,...
 [maxEta, maxIndex] = max(etamax);
 
 % Nomes correspondentes aos etas
-etaNames = {'b,c', 'b,CLT', 'v,c', 'v,CLT', 'v,s', 'w,1kN', 'w,fin',...
+etaNames = {'b,c', 'b,CLT', 'v,c', 'v,CLT', 'v,s', 'fn', 'w,fin',...
     'w,inst'};
 maxEtaName = etaNames{maxIndex};
 
-% Configuração do título
+% ConfiguraÃ§Ã£o do tÃ­tulo
 title(sprintf('MAXIMUM DESIGN RATIO \\eta_{%s} = %.2f', maxEtaName, maxEta));
 txt = text(L/4, 0, 1.5*maxEta, note, ...
     'HorizontalAlignment', 'left', 'VerticalAlignment', 'bottom',...
-    'FontSize', 10, 'Color', 'Black','BackgroundColor', 'white');
+    'FontSize', 14, 'Color', 'Black','BackgroundColor', 'white');
 set(txt, 'EdgeColor', 'Black', 'BackgroundColor', [1, 1, 1, 0.5]);
 
 clearvars                       % Clear variables
